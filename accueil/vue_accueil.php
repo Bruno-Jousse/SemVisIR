@@ -51,7 +51,7 @@
   <!-- Les scripts -->
    <script type="text/javascript">
      function checkSize(max_img_size){
-         var input = document.getElementById("upload");
+         var input = document.getElementById("lienImg");
 
          // check for browser support (may need to be modified)
          if(input.files && input.files.length == 1){           

@@ -9,7 +9,5 @@
 	<script src="tierApp/jQuery/jquery-3.2.1.min.js"></script>
 	<link href="tierApp/lightbox2-master/dist/css/lightbox.min.css" rel="stylesheet">
    	<script src="tierApp/lightbox2-master/dist/js/lightbox.min.js"></script>
- 	<script src="tierApp/arbor-v0.92/lib/arbor.js"></script> 
-	<script src="tierApp/arbor-v0.92/lib/arbor-tween.js"></script> 
-	<script src="tierApp/arbor-v0.92/lib/arbor-graphics.js"></script>
+	<script src="tierApp/cytoscape/cytoscape.min.js"></script>
 	</head>

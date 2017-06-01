@@ -153,7 +153,9 @@ form{
 }
 
 .partieDroite{
-  margin-left:5%;
+margin-top:10px;
+width:100%;
+height:700px;
 }
 
 #pagination{
@@ -177,10 +179,6 @@ margin-top:10px;
   width: 16%;
   height: auto;
   padding-left: 1%;
-}
-
-.categories{
-
 }
 
 #titreCat{
@@ -209,14 +207,18 @@ color:white;
   display: none;
 }
 
-canvas{
-	height:700px;
-	width:100%;
-}
+/*
+*
+*Presentation graphique
+*/
 
-canvas .linkable{
-   cursor: pointer;
- }
+#cy{
+	width:100%;
+	height:90%;
+  	position: relative;
+  	left: 0;
+  	top: 0;
+}
 
 /**************************************************************************
 *
@@ -232,7 +234,7 @@ canvas .linkable{
 }*/
 
 @media screen and (max-width:760px) and (min-width:414px){
-  footer{
+footer{
     height: 120px;
   }
 

@@ -89,7 +89,7 @@
     </div>
   </div>
   ';
-  $this->basiqueScript();
+      $this->basiqueScript();
 		}
 
 //Affichage avancée
@@ -136,7 +136,6 @@
           <div id="Categorie3" onclick="selectionCategorie(this)" class="cat"><input id="Input3" class="radio" type="radio" name="Categorie" /><label class="radioLabel" for="Input3"></label></div>
         <a class="fleche" href="javascript:flecheDroite()" id="flecheD">></a>
         </div>
-      </div>
         <hr>
 
         <div id="divboucle">
@@ -150,20 +149,19 @@
           <a href="javascript:lastPage()" id="btn_last">>></a>
         </div>
       </div>
+      </div>
     </div>
   </div>
 ';
 
-  $this->categorieScript();
+      $this->categorieScript();
 		}
 
 //Affichage graphique
     public function graphique($img, $exif, $images, $liens) {
+
       $this->initialisationVariables($img, $exif, $images);
       $this->jsonLiens=json_encode($liens,JSON_UNESCAPED_SLASHES);
-      
-      //print_r($this->jsonArray);
-      print_r($this->jsonLiens);
       
 			$this->titre="Recherche avancée";
 			$this->contenu='
@@ -193,15 +191,23 @@
     </div>
     </div>
   </div>
-  <div class="col-sm-8">
+  <div class="col-sm-8" style="height:700px;">
     <div class="partieDroite">
-      <canvas id="viewport">
-      </canvas>
+      <!--<canvas id="viewport"></canvas>-->
+      <div>
+        <h4> Choix de l\'affichage: </h4>
+        <button onclick="changeLayout(\'circle\')">Circle</button>
+        <button onclick="changeLayout(\'concentric\')">Concentric</button>
+        <button onclick="changeLayout(\'cose\')">Cose</button>
+        <button onclick="changeLayout(\'grid\')">Grid</button>
+      </div>
+      <div id="cy"></div>
+      <button onclick="reset()">Reset</button>
     </div>
   </div>
 </div>
   ';
-  $this->graphiqueScript();
+        $this->graphiqueScript();
       }
 
 
@@ -457,143 +463,184 @@
     private function graphiqueScript(){
  $this->contenu.='
     <script type="text/javascript">
-(function($){
-
-  var Renderer = function(canvas){
-    var canvas = $(canvas).get(0);
-    var ctx = canvas.getContext("2d");
-    var gfx = arbor.Graphics(canvas);
-    var particleSystem;
-
-    var that = {
-      init:function(system){
-        
-        particleSystem = system;
-
-        particleSystem.screenSize(canvas.width, canvas.height) ;
-        particleSystem.screenPadding(15); 
-
-        that.initMouseHandling();
-
-        particleSystem.eachNode(function(node, pt){
-          var image=node.data.src;
-          if(image !== undefined){
-            node.data.img = new Image();
-            node.data.img.src = node.data.src;
-          }
-        });
-      },
-      
-      redraw:function(){
-        gfx.clear();
-        ctx.fillStyle = "white";
-        ctx.fillRect(0,0, canvas.width, canvas.height);
-        
-        particleSystem.eachEdge(function(edge, pt1, pt2){
-
-          ctx.strokeStyle = "#b2b19d";
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(pt1.x, pt1.y);
-          ctx.lineTo(pt2.x, pt2.y);
-          ctx.stroke();
-        });
-
-        particleSystem.eachNode(function(node, pt){
-          if(node.data.categorie===undefined){
-              var w = 5;
-              ctx.fillStyle = "black";
-              ctx.fillRect(pt.x-w/2, pt.y-w/2, w,w);
-          }
-          else{
-            if(node.data.categorie=true){
-              var label=node.name;
-
-              if (label !== undefined){
-                var w = Math.max(7, 7+gfx.textWidth(label));
-                gfx.oval(pt.x-w/2, pt.y-w/2, w, w,  {fill:"#2E9AFE", alpha:"1"});
-                gfx.text(label, pt.x, pt.y+7, {color:"white", align:"center", font:"Arial", size:8});
-                gfx.text(label, pt.x, pt.y+7, {color:"white", align:"center", font:"Arial", size:8});
-                
-              }
-            }
-            else{
-              var img=node.data.img;
-              if (img !== undefined){
-                ctx.drawImage(img, pt.x-(imageW/2), pt.y+radius/2, 50, 50);
-              }
-            }
-          }
-        });  			
-      },
-      
-      initMouseHandling:function(){
-
-        var handler = {
-          clicked:function(e){
-            var pos = $(canvas).offset();
-            _mouseP = arbor.Point(e.pageX-pos.left, e.pageY-pos.top);
-            
-            nearest = particleSystem.nearest(_mouseP);
-
-            if (!nearest.node) return false;
-            selected = (nearest.distance < 50) ? nearest : null;
-
-            if (nearest && selected && nearest.node===selected.node && selected.node.data.categorie!==undefined && selected.node.data.categorie==false){
-              var link = selected.node.data.src;
-              window.open(link, "_blank");
-            }
-          },
-        }
-        $(canvas).mousedown(handler.clicked);
-
-      }
-      
-    }
-    return that;
-  }    
-
-  $(document).ready(function(){
-    var sys = arbor.ParticleSystem(2000, 500, 0.9);
-    sys.parameters({gravity:true});
-    sys.renderer = Renderer("#viewport");
+  
     var images='.$this->jsonArray.';
     var liens='.$this->jsonLiens.';
-    //var images={"beach":[{"src":"images/ImageCLEFphoto2008/images/39/39714.jpg","meta":{"Title":"Die Sydney Harbour Bridge, vom Sydney Observatorium aus","Description":"","Notes":"","Location":"Sydney, Australien","Date":"September 2002"},"sim":"0.923"},{"src":"images/ImageCLEFphoto2008/images/00/116.jpg","meta":{"Title":"Termas de Papallacta","Description":"","Notes":"","Location":"Papallacta, Ecuador","Date":"April 2002"},"sim":"0.921"},{"src":"images/ImageCLEFphoto2008/images/32/32698.jpg","meta":{"Title":"El Puente del Puerto de Sydney, desde el Observatorio de Sydney","Description":"","Notes":"","Location":"Sydney, Australia","Date":"Septiembre de 2002"},"sim":"0.919"}],"sand":[{"src":"images/ImageCLEFphoto2008/images/39/39706.jpg","meta":{"Title":"El Puente del Puerto de Sydney desde Campbell\'s Cove","Description":"","Notes":"","Location":"Sydney, Australia","Date":"Septiembre de 2002"},"sim":"0.899"},{"src":"images/ImageCLEFphoto2008/images/11/11027.jpg","meta":{"Title":"Sand dunes in the Len\u00e7ois Maranhenses National Park","Description":"","Notes":"","Location":"Len\u00e7ois Maranhenses, Brazil","Date":"25 March 2004"},"sim":"0.895"},{"src":"images/ImageCLEFphoto2008/images/39/39696.jpg","meta":{"Title":"El Puente del Puerto de Sydney","Description":"","Notes":"","Location":"Sydney, Australia","Date":"Septiembre de 2002"},"sim":"0.879"}],"person":[{"src":"images/ImageCLEFphoto2008/images/05/5079.jpg","meta":{"Title":"Der Strand bei Paracas","Description":"","Notes":"","Location":"Paracas, Peru","Date":"September 2002"},"sim":"0.709"},{"src":"images/ImageCLEFphoto2008/images/06/6619.jpg","meta":{"Title":"In the hot springs","Description":"","Notes":"","Location":"Chivay, Peru","Date":"10 October 2002"},"sim":"0.708"},{"src":"images/ImageCLEFphoto2008/images/32/32890.jpg","meta":{"Title":"Circular Quay und das Opernhaus von Sydney","Description":"","Notes":"","Location":"Sydney, Australien","Date":"3. Januar 2005"},"sim":"0.706"},{"src":"images/ImageCLEFphoto2008/images/02/2452.jpg","meta":{"Title":"Las ruinas de Chan Chan","Description":"","Notes":"","Location":"Trujillo, Per\u00fa","Date":"Noviembre de 2002"},"sim":"0.704"},{"src":"images/ImageCLEFphoto2008/images/05/5183.jpg","meta":{"Title":"Die K\u00fcste der Isla de la Plata","Description":"","Notes":"","Location":"Isla de la Plata, Ekuador","Date":"September 2002"},"sim":"0.704"},{"src":"images/ImageCLEFphoto2008/images/39/39699.jpg","meta":{"Title":"Vista de una parte de la \u00d3pera de Sydney","Description":"","Notes":"","Location":"Sydney, Australia","Date":"Septiembre de 2002"},"sim":"0.703"}]};
+    //var images={beach:[{"src":"images/ImageCLEFphoto2008/images/39/39714.jpg","meta":{"Title":"Die Sydney Harbour Bridge, vom Sydney Observatorium aus","Description":"","Notes":"","Location":"Sydney, Australien","Date":"September 2002"},"sim":"0.923"},{"src":"images/ImageCLEFphoto2008/images/00/116.jpg","meta":{"Title":"Termas de Papallacta","Description":"","Notes":"","Location":"Papallacta, Ecuador","Date":"April 2002"},"sim":"0.921"},{"src":"images/ImageCLEFphoto2008/images/32/32698.jpg","meta":{"Title":"El Puente del Puerto de Sydney, desde el Observatorio de Sydney","Description":"","Notes":"","Location":"Sydney, Australia","Date":"Septiembre de 2002"},"sim":"0.919"}],"sand":[{"src":"images/ImageCLEFphoto2008/images/39/39706.jpg","meta":{"Title":"El Puente del Puerto de Sydney desde Campbell\'s Cove","Description":"","Notes":"","Location":"Sydney, Australia","Date":"Septiembre de 2002"},"sim":"0.899"},{"src":"images/ImageCLEFphoto2008/images/11/11027.jpg","meta":{"Title":"Sand dunes in the Len\u00e7ois Maranhenses National Park","Description":"","Notes":"","Location":"Len\u00e7ois Maranhenses, Brazil","Date":"25 March 2004"},"sim":"0.895"},{"src":"images/ImageCLEFphoto2008/images/39/39696.jpg","meta":{"Title":"El Puente del Puerto de Sydney","Description":"","Notes":"","Location":"Sydney, Australia","Date":"Septiembre de 2002"},"sim":"0.879"}],"person":[{"src":"images/ImageCLEFphoto2008/images/05/5079.jpg","meta":{"Title":"Der Strand bei Paracas","Description":"","Notes":"","Location":"Paracas, Peru","Date":"September 2002"},"sim":"0.709"},{"src":"images/ImageCLEFphoto2008/images/06/6619.jpg","meta":{"Title":"In the hot springs","Description":"","Notes":"","Location":"Chivay, Peru","Date":"10 October 2002"},"sim":"0.708"},{"src":"images/ImageCLEFphoto2008/images/32/32890.jpg","meta":{"Title":"Circular Quay und das Opernhaus von Sydney","Description":"","Notes":"","Location":"Sydney, Australien","Date":"3. Januar 2005"},"sim":"0.706"},{"src":"images/ImageCLEFphoto2008/images/02/2452.jpg","meta":{"Title":"Las ruinas de Chan Chan","Description":"","Notes":"","Location":"Trujillo, Per\u00fa","Date":"Noviembre de 2002"},"sim":"0.704"},{"src":"images/ImageCLEFphoto2008/images/05/5183.jpg","meta":{"Title":"Die K\u00fcste der Isla de la Plata","Description":"","Notes":"","Location":"Isla de la Plata, Ekuador","Date":"September 2002"},"sim":"0.704"},{"src":"images/ImageCLEFphoto2008/images/39/39699.jpg","meta":{"Title":"Vista de una parte de la \u00d3pera de Sydney","Description":"","Notes":"","Location":"Sydney, Australia","Date":"Septiembre de 2002"},"sim":"0.703"}]};
     //var liens=[["beach","sand"],["sand","person"]];
+    
 
+    var initNodes=[];
+    var initEdges=[];
+
+    var colorI=0;
     for(categorie in images){
+      var colorVal=getColor(colorI);
+      initNodes.push({"data": {"id": categorie, "categorie": true, "color": colorVal}});
+      
+      for(var i=0; i<images[categorie].length; i++){
+        var name=categorie+i;
+        initNodes.push({"data": {"id": images[categorie][i]["src"], "categorie": false, "src": images[categorie][i]["src"], "meta": images[categorie][i]["meta"], "sim": images[categorie][i]["sim"]}});
+        initEdges.push({"data": {"source": categorie, "target": images[categorie][i]["src"], "color": colorVal, "categorie": false}});
+      }
+      colorI++;
+    }
+
+    for(var i=0; i<liens.length; i++){
+      initEdges.push({"data": {source: liens[i][0], "target": liens[i][1], "color": "#000000", "categorie": true }});
+    }  
+
+    var cy;
+
+    function getColor(index){
+      var nb=index%6;
+      var i=Math.floor(index/6)
+      if(nb==0){
+        var r=255;
+        var g=0;
+        var b=(0+i*10)%256;
+        return "rgb("+r+", "+g+", "+b+")";
+      }
+      else if(nb==1){
+        var r=(255-i*10)%256;
+        var g=0;
+        var b=255;
+        return "rgb("+r+", "+g+", "+b+")";
+      }
+      else if(nb==2){
+        var r=0;
+        var g=(0+i*10)%256;
+        var b=255;
+        return "rgb("+r+", "+g+", "+b+")";
+      }
+      else if(nb==3){
+        var r=0;
+        var g=255;
+        var b=(255-i*10)%256;
+        return "rgb("+r+", "+g+", "+b+")";
+      }
+      else if(nb==4){
+        var r=(0+i*10)%256;
+        var g=255;
+        var b=0;
+        return "rgb("+r+", "+g+", "+b+")";
+      }
+      else if(nb==5){
+        var r=255;
+        var g=(255-i*10)%256;
+        var b=0;
+        return "rgb("+r+", "+g+", "+b+")";
+      }
+      return "#000000";
+    }
+
+"use strict";
+document.addEventListener(\'DOMContentLoaded\', function() {
+    cy=cytoscape({
+      container:document.getElementById("cy"),
+      elements:{
+        nodes: initNodes,
+        edges: initEdges
+      },
+
+      style: cytoscape.stylesheet().selector(\'node\').css({  
+          \'height\': "80px",
+          \'width\': "80px",
+          \'background-fit\': \'cover\',
+          \'background-color\': \'#000000\'
+      }).selector(\'edge\').css({
+          \'width\': 2,
+          \'line-color\': \'#000000\',
+          \'target-arrow-color\': \'#000000\',
+          \'target-arrow-shape\': \'triangle\'
+      }).selector(\'.categorie\').css({
+          \'height\': "40px",
+          \'width\': "  40px",
+	        \'background-color\': \'#FF0000\',
+          \'color\': \'#FF0000\',
+          \'text-transform\': \'uppercase\',
+          \'font-weight\': \'bold\'
+      }),
+
+      layout:{
+        //grid, circle, concentric, cose
+        name: \'concentric\',
+      }
+    });
+
+   cy.filter(function(element, i){
+      if(element.isNode() && element.data("categorie") == false && element.data("src") != ""){
+          element.style("background-image", element.data("src"));
+          element.on("tap", function(evt){
+            window.open(element.data("src"), "_blank");  
+          });
+          return true;
+      }
+      if(element.isNode() && element.data("categorie") == true){
+        element.addClass("categorie");
+        element.style(\'label\', element.data("id"));
+        element.style(\'background-color\', element.data("color"));
+        return true;
+      }
+      var couleur
+      if(element.isEdge() && (couleur=element.data("color"))!==undefined){
+        element.style("line-color", couleur);
+
+        if(element.data("categorie")==true){
+          element.style("width", 4);
+        }
+        return true;
+      }
+      return false;
+    });
+
+/*
+  for(categorie in images){
           
-          var nodeCate=sys.addNode(categorie, {mass:.0001, categorie:true});
-          //data["nodes"].push({categorie:{"mass":0.25, "categorie":"true"}});
+          cy.add({group: "nodes", data: {id: categorie, "categorie": true}});
           
           for(var i=0; i<images[categorie].length; i++){
             var name=categorie+i;
-            var nodeImg=sys.addNode(name, {mass:0.25, categorie:false, src:images[categorie][i].src, meta:images[categorie][i].meta, sim:images[categorie][i].sim});
-            console.log(nodeImg.data);
-
-            if(nodeCate !== undefined && nodeImg !== undefined)
-              sys.addEdge(nodeCate, nodeImg);
-
-            //data[nodes].push({name:{"mass":0.25, "categorie":"false", "src":images[categorie][i].src, "meta":images[categorie][i].meta, "sim":images[categorie][i].sim}});
-            //data[edges].push({categorie:{name:{}}});
+            cy.add({group: "nodes", data: {id: name, "categorie": false}});
+            cy.add({group: "edges", data: {source: categorie, target: name}});
           }
     }
 
     for(var i=0; i<liens.length; i++){
-      console.log(liens[i][0]+", "+liens[i][1]);
-      if(liens[i][0]!=null && liens[i][1]!=null){
-        var node1=sys.getNode(liens[i][0]);
-        var node2=sys.getNode(liens[i][1]);
-        //data[edges].push({liens[i][0]:{}, liens[i][1]:{}});
-        if(node1!== undefined && node2 !== undefined)
-          sys.addEdge(node1, node2);
-      }
+      cy.add({group: "edges", data: {source: liens[i][0], target: liens[i][1]}});
     }
+*/
+
   });
 
-})(this.jQuery);
-    </script>';
+  function reset(){
+    if(cy!==undefined && cy!=null){
+      cy.reset();
+    }
+  }
+
+  function changeLayout(newLayout){
+    if(cy!==undefined && cy!=null){
+      switch(newLayout){
+        case "circle":
+          break;
+        case "cose":
+          break;
+        case "grid":
+          break;
+        case "concentric":
+          break;
+        default:
+          newLayout="concentric";
+      }
+      var layout = cy.layout({
+        "name": newLayout
+      });
+      layout.run();
+    }
+  }
+
+</script>';
     }
 
     public function getGps($exifCoord, $hemi) {
