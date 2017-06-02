@@ -9,6 +9,7 @@
 			$this->modele=new ModeleRecherche();
 
 			if(isset($_POST["algo"]) && isset($_POST["affichage"]) && isset($_FILES["file"])){
+
 				$img=$_FILES["file"];
 
 				$algo=htmlspecialchars($_POST["algo"]);
@@ -27,11 +28,15 @@
 				$exif=$this->getExif($img);
 				$exif=$this->testExif($exif);
 				
-				if($this->choixAffichage($vue, $img, $exif)==false){
-					$this->vue->vue_erreur("L'affichage choisi ne correspond à aucun de ceux disponibles.");
+				try{
+					if($this->choixAffichage($vue, $img, $exif)==false){
+						$this->vue->vue_erreur("L'affichage choisi ne correspond à aucun de ceux disponibles.");
+						return;
+					}
+				} catch(ModeleRechercheException $e){
+					$this->vue->vue_erreur($e);
 					return;
 				}
-				
 			}
 			else{
 				$this->vue->vue_erreur("Vous avez mal rempli le formulaire, veuillez retourner à la page d'accueil.");
@@ -83,47 +88,140 @@
 			return $this->modele->exif($img);
 		}
 
-		//Sélectionne le bon mode d'affichage
+		//Vérifie le mode d'affichage et récupère les images et leurs informations
 		private function choixAffichage($vue, $img, $exif){
+
 			switch($vue){
 				case "Basique":
-					$this->rechercheBasique($img, $exif);
+					//$this->affichageBasique($img, $exif, $imagesSim, $imagesCate, $liens);
 					break;
 				case "Avancee":
-					$this->rechercheAvancee($img, $exif);
+					//$this->affichageAvance($img, $exif, $imagesSim, $imagesCate, $liens);	
 					break;
 				case "Graphique":
-					$this->rechercheGraphique($img, $exif);
+					//$this->affichageGraphique($img, $exif, $imagesSim, $imagesCate, $liens);	
 					break;
 				default:
 					return false;
 			}
+
+			try{
+				//Récupération images.
+				$imagesEtLiens=$this->modele->getImagesEtLiens();
+				$imagesCate=$imagesEtLiens[0];
+				$liens=$imagesEtLiens[1];
+				$imagesSim=array();
+
+				//Récupération images sans catégorie pour l'affichage basique
+				foreach($imagesCate as $key => $images){
+					for($i=0; $i<count($images); $i++){
+						$imagesSim[$i]=($images[$i]);
+					}
+				}
+
+				//Trie selon similarité
+				$imagesSim=$this->modele->array_sort($imagesSim, "sim", SORT_DESC);		
+				foreach($imagesCate as $categories => $categorie){
+					$imagesCate[$categories]=$this->modele->array_sort($categorie, "sim", SORT_DESC);
+				}
+
+			} catch(ModeleRechercheException $e){
+				throw $e;
+			}
+
+			$this->vue->affichage($img, $exif, $imagesSim, $imagesCate, $liens, $vue);
+
 			return true;
 		}
 
 		public function testExif($exif){
+			$newExif=array();
 
-      		if(!isset($exif["COMPUTED"]["UserComment"])) 
-        		$exif["COMPUTED"]["UserComment"]="";
-
-      		if(!isset($exif["GPS"]["GPSLongitude"]) || !isset($exif["GPS"]['GPSLongitudeRef']) || !isset($exif["GPS"]["GPSLatitude"]) || !isset($exif["GPS"]['GPSLatitudeRef'])){
-        		$exif["GPS"]["GPSLongitude"]=null;
-        		$exif["GPS"]["GPSLongitudeRef"]=null;
-        		$exif["GPS"]["GPSLatitude"]=null;
-        		$exif["GPS"]["GPSLatitudeRef"]=null;
+			if(!isset($exif["GPS"]["GPSLongitude"]) || !isset($exif["GPS"]['GPSLongitudeRef']) || !isset($exif["GPS"]["GPSLatitude"]) || !isset($exif["GPS"]['GPSLatitudeRef'])){
+				$newExif["location"]="";
      		 }
+			else{
+				$longitude=$this->getGps($exif["GPS"]["GPSLongitude"], $exif["GPS"]["GPSLongitudeRef"]);
+				$latitude=$this->getGps($exif["GPS"]['GPSLatitude'], $exif["GPS"]['GPSLatitudeRef']);
+
+				$newExif["location"]='longitude='.$longitude.', latitude='.$latitude;
+			}
+
+			$texte="";
+			if(isset($exif["EXIF"]["UserComment"])) {
+				$texte.=$exif["EXIF"]["UserComment"]."\n";
+			}
+
+			if(isset($exif["IMAGE"]["ImageDescription"])){
+				$texte.=$exif["IMAGE"]["ImageDescription"];
+			}
+
+			$newExif["texte"]=$texte;
 
 			if(!isset($exif["FILE"]["FileSize"])){
-			  $exif["FILE"]["FileSize"]=null;
+			  	$newExif["taille"]="";
+			}
+			else{
+				$tailleKo=$exif["FILE"]["FileSize"]/1024;
+				$tailleKo.=" Ko";
+				$newExif["taille"]=$tailleKo;
 			}
 
-			if(!isset($exif["DateTimeOriginal"])){
-				$exif["DateTimeOriginal"]=null;
+			if(!isset($exif["EXIF"]["DateTimeOriginal"])){
+				$newExif["date"]="";
 			}
-			return $exif;
+			else{
+				$newExif["date"]=$this->transformDate($exif["EXIF"]["DateTimeOriginal"]);
+			}
+      		
+			return $newExif;
 		}
 		
+		public function getGps($exifCoord, $hemi) {
+
+			$degrees = count($exifCoord) > 0 ? $this->gps2Num($exifCoord[0]) : 0;
+			$minutes = count($exifCoord) > 1 ? $this->gps2Num($exifCoord[1]) : 0;
+			$seconds = count($exifCoord) > 2 ? $this->gps2Num($exifCoord[2]) : 0;
+
+			$flip = ($hemi == 'W' or $hemi == 'S') ? -1 : 1;
+
+			return $flip * ($degrees + $minutes / 60 + $seconds / 3600);
+
+		}
+
+		public function gps2Num($coordPart) {
+
+			$parts = explode('/', $coordPart);
+
+			if (count($parts) <= 0)
+				return 0;
+
+			if (count($parts) == 1)
+				return $parts[0];
+
+			return floatval($parts[0]) / floatval($parts[1]);
+		}
+
+		public function transformDate($date){
+			$exploded=explode(" ", $date);
+			$explodedDate=explode(":", $exploded[0]);
+
+			$jour=$explodedDate[2];
+			$mois=$explodedDate[1];
+			$annee=$explodedDate[0];
+		
+			$explodedHeure=explode(":", $exploded[1]);
+
+			$heure=$explodedHeure[0];
+			$minute=$explodedHeure[1];
+			$seconde=$explodedHeure[2];
+		
+			$dateFin="Le ".$jour."/".$mois."/".$annee." à ".$heure.":".$minute.":".$seconde;
+			return $dateFin;
+		}
+	/*
 		private function rechercheBasique($img, $exif){
+			
 			try{
 				$images=$this->modele->getImagesSim();
 			} catch(ModeleRechercheException $e){
@@ -157,7 +255,19 @@
 			}
 			$images=$imagesEtLiens[0];
 			$liens=$imagesEtLiens[1];
-			$this->vue->graphique($img, $exif, $images, $liens);
+			$this->affichageGraphique($img, $exif, $imagesSim, $imagesCate, $liens);
 		}
+
+		private function affichageBasique($img, $exif, $imagesSim, $imagesCate, $liens){
+			$this->vue->basique($img, $exif, $imagesSim, $imagesCate, $liens);
+		}
+
+		private function affichageAvance($img, $exif, $imagesSim, $imagesCate, $liens){
+			$this->vue->avancee($img, $exif, $imagesSim, $imagesCate, $liens);
+		}
+
+		private function affichageGraphique($img, $exif, $imagesSim, $imagesCate, $liens){
+			$this->vue->graphique($img, $exif, $imagesSim, $imagesCate, $liens);
+		}*/
 	}
 ?>

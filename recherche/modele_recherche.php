@@ -20,6 +20,8 @@
 			return $array;
 		}
 
+
+		/*
 		//Affichage basique
 		public function getImagesSim(){
 			//Contient la fonction file_get_html
@@ -77,9 +79,10 @@
 				}
 			}
 			return $images;
-		}
+		}*/
 
-		//Affichage graphique
+		//retourne: {categorie:{image:{src:"", sim:"", meta:{titre:"" date:""...} } } }
+		//Array des catégories possèdans des images ayant une source, une valeur de similarité et des metadonnées.
 		public function getImagesEtLiens(){
 			include_once("tierApp/simple-html-dom/simple_html_dom.php");
 			
@@ -182,7 +185,7 @@
 
 
 		//Récupère juste les images (pas utilisé)
-		public function result(){
+		/*public function result(){
 			if(!($file=fopen("category/listResults.txt","r"))){
 				return false;
 			}
@@ -193,7 +196,7 @@
 			}
 			fclose($file);
 			return $results;
-		}
+		}*/
 
 		//Récupère les images et valeurs de similaritées
 		public function similarity(){
