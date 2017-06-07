@@ -2,7 +2,7 @@
 
 Application de recherche d'image.
 
-		Introduction
+## Introduction
 
 L'application a été réalisée en PHP au format MVC, l'affichage se fait en HTML/CSS avec du Javascript. 
 
@@ -19,23 +19,23 @@ Les fonctions du Modèle exécutent des algorithmes et des calculs et retournent
 Les fonctions de la Vue permette de définir ce qui sera affiché par l'index, à l'intérieur de la variable $contenu.
 
 
-		Les modules
+## Les modules
 
-		Module Accueil
+### Module Accueil
 
 Accueil est la page initiale ou en cliquant sur la bannière, elle contient le formulaire dans lequel il faut sélectionner une image, un mode d'affichage et un algorithme
 
 
-		Module Recherche
+### Module Recherche
 
 Recherche est le module le plus conséquent de l'application, le contrôleur récupère les informations envoyées, exécute le bon algorithme qui va écrire dans les fichiers du dossier category les images correspondantes, leurs catégories et similarité. Puis il demande au modèle d'obtenir les métadonnées de l'image ainsi que les images ainsi retournées par l'algorithme. Enfin il appelle la vue ne lui envoyant les informations obtenues, qui affichera ces informations selon l'affichage choisi.
 
-		Les autres dossiers
+## Les autres dossiers
 
-		Images
+### Images
 
 Le dossier images possède l'ensemble des images sélectionnables par l'algorithme, ainsi que les annotations des images qui permettent d'obtenir les informations basiques sur les images (lieu, date...).
 
-		tierApp
+### tierApp
 
 Le dossier tierApp regroupe tous les scripts tiers, les frameworks qui sont utilisés dans le site (ex: Bootstrap, Cytoscape, Lightbox2).
