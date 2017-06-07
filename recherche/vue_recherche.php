@@ -7,12 +7,13 @@
     private $texte="";
     private $taille="";
     private $date="";
-    private $imagesS="";
-    private $imagesC="";
+    private $images="";
+    private $categories="";
     private $liens="";
     private $vue="";
 
-    private function initialisationVariables($img, $exif, $imagesSim, $imagesCate, $liens, $vue){
+    //Initialise les variables de manière globale pour leur utilisation dans d'autres méthodes sans avoir à les passer en argument + json_encode
+    private function initialisationVariables($img, $exif, $images, $categories, $liens, $vue){
       $this->name=$img["name"];
       $this->imageData = file_get_contents($img["tmp_name"]);
 
@@ -24,12 +25,13 @@
 
       $this->date=$exif["date"];
 
-      $this->imagesS=json_encode($imagesSim,JSON_UNESCAPED_SLASHES);
-      $this->imagesC=json_encode($imagesCate,JSON_UNESCAPED_SLASHES);
+      $this->images=json_encode($images,JSON_UNESCAPED_SLASHES);
+      $this->categories=json_encode($categories,JSON_UNESCAPED_SLASHES);
       $this->liens=json_encode($liens,JSON_UNESCAPED_SLASHES);
       $this->vue=json_encode($vue,JSON_UNESCAPED_SLASHES);
     }
 
+    //Tous les affichages ont une partie commune
     private function htmlCommun(){
       $this->contenu='
   <div  class="container content-section text-center">
@@ -70,10 +72,11 @@
     ';
     }
 
-    public function affichage($img, $exif, $imagesSim, $imagesCate, $liens, $vue){
-      $this->initialisationVariables($img, $exif, $imagesSim, $imagesCate, $liens, $vue);
+    public function affichage($img, $exif, $images, $categories, $liens, $vue){
+      $this->initialisationVariables($img, $exif, $images, $categories, $liens, $vue);
 
       $this->titre="Recherche";
+
       $this->htmlCommun();
 
       $vueBasique=$this->htmlBasique();
@@ -145,7 +148,7 @@
   </div>
 
   <script type="text/javascript">
-      var objJson='.$this->imagesS.';
+      var images='.$this->images.';
       
       var current_page = 1;
       var records_per_page = 20;
@@ -181,15 +184,19 @@
 
         listing_table.innerHTML = "";
 
-        for (var i = (page-1) * records_per_page; i < (page * records_per_page) && i < objJson.length; i++) {
+        for (var i = (page-1) * records_per_page; i < (page * records_per_page) && i < images.length; i++) {
           var infos="";
 
-          for(var j in objJson[i].meta){
-            infos+=j+": "+objJson[i].meta[j]+"<br/>";
+          for(var j in images[i].meta){
+            infos+=j+": "+images[i].meta[j]+"<br/>";
           } 
-          infos+="Similarities="+objJson[i].sim;
-          
-          listing_table.innerHTML += \'<a href="\'+ objJson[i].src +\'" data-lightbox="images" data-title="\'+ infos +\'" ><img src="\'+ objJson[i].src +\'" class="imgBasique"></a>\';
+          infos+="Similarity = "+images[i].sim+"<br/>";
+          infos+="Categories = ";
+          for(var j in images[i].categories){
+            infos+=images[i].categories[j]+" ";
+          }
+
+          listing_table.innerHTML += \'<a class="lienImg" href="\'+ images[i].src +\'" data-lightbox="images" data-title="\'+ infos +\'" ><img src="\'+ images[i].src +\'" class="imgBasique"><h4 class="similarity">\'+images[i].sim+\'</h4></a>\';
         }
 
         page_span.innerHTML = page;
@@ -213,7 +220,7 @@
 
     function numPages()
     {
-        return Math.ceil(objJson.length / records_per_page);
+        return Math.ceil(images.length / records_per_page);
     }
 
     function firstPage(){
@@ -263,7 +270,8 @@
   </div>
 
   <script type="text/javascript">
-      var objJson='.$this->imagesC.';
+      var images='.$this->images.';
+      var categories='.$this->categories.';
       var listeImages;
 
       //Pagination
@@ -310,9 +318,12 @@
             for(var j in listeImages[i].meta){
               infos+=j+": "+listeImages[i].meta[j]+"<br/>";
             } 
-            infos+="Similarities= "+listeImages[i].sim+"<br/>"
-            +"Category: "+categorieChecked;
-            listing_table.innerHTML += \'<a href="\'+ listeImages[i].src +\'" data-lightbox="images" data-title="\'+ infos +\'" ><img src="\'+ listeImages[i].src +\'" class="imgBasique"></a>\';
+            infos+="Similarity= "+listeImages[i].sim+"<br/>"
+            infos+="Categories = ";
+            for(var j in listeImages[i].categories){
+              infos+=listeImages[i].categories[j]+" ";
+            }            
+            listing_table.innerHTML += \'<a class="lienImg" href="\'+ listeImages[i].src +\'" data-lightbox="images" data-title="\'+ infos +\'" ><img src="\'+ listeImages[i].src +\'" class="imgBasique"><h4 class="similarity">\'+listeImages[i].sim+\'</h4></a>\';
           }
         }
         
@@ -353,7 +364,6 @@
     //affichage catégorie
 
     var indexCategories=0;
-    var categories;
     var categoriesHTML;
     var categorieChecked;
     
@@ -392,17 +402,26 @@
       if(typeof div !== "undefined"){
         categorieChecked=div.getElementsByTagName("label")[0].innerHTML;
         div.getElementsByTagName("input")[0].checked=true;
-        if(listeImages!=objJson[categorieChecked]){
-          listeImages=objJson[categorieChecked];
-          changePage(1);
+        listeImages=getImages(categorieChecked);
+        changePage(1);
+      }
+    }
+
+    function getImages(categorie){
+      var imgs=[];
+      for(var i=0; i<images.length; i++){
+        for(var j=0; j<images[i].categories.length; j++){
+          if(images[i].categories[j]==categorie){
+            imgs.push(images[i]);
+          }
         }
       }
+      return imgs;
     }
 
     window.onload = function() {
         //createCategories();
         categoriesHTML=document.getElementsByClassName("cat");
-        categories=Object.keys(objJson);
         affichageCategories();
         if(categories.length>0)
           selectionCategorie(categoriesHTML[0]);
@@ -437,29 +456,32 @@
   </div>
   <script type="text/javascript">
     
-      var images='.$this->imagesC.';
+      var images='.$this->images.';
+      var categories='.$this->categories.';
       var liens='.$this->liens.';
       //var images={beach:[{"src":"images/ImageCLEFphoto2008/images/39/39714.jpg","meta":{"Title":"Die Sydney Harbour Bridge, vom Sydney Observatorium aus","Description":"","Notes":"","Location":"Sydney, Australien","Date":"September 2002"},"sim":"0.923"},{"src":"images/ImageCLEFphoto2008/images/00/116.jpg","meta":{"Title":"Termas de Papallacta","Description":"","Notes":"","Location":"Papallacta, Ecuador","Date":"April 2002"},"sim":"0.921"},{"src":"images/ImageCLEFphoto2008/images/32/32698.jpg","meta":{"Title":"El Puente del Puerto de Sydney, desde el Observatorio de Sydney","Description":"","Notes":"","Location":"Sydney, Australia","Date":"Septiembre de 2002"},"sim":"0.919"}],"sand":[{"src":"images/ImageCLEFphoto2008/images/39/39706.jpg","meta":{"Title":"El Puente del Puerto de Sydney desde Campbell\'s Cove","Description":"","Notes":"","Location":"Sydney, Australia","Date":"Septiembre de 2002"},"sim":"0.899"},{"src":"images/ImageCLEFphoto2008/images/11/11027.jpg","meta":{"Title":"Sand dunes in the Len\u00e7ois Maranhenses National Park","Description":"","Notes":"","Location":"Len\u00e7ois Maranhenses, Brazil","Date":"25 March 2004"},"sim":"0.895"},{"src":"images/ImageCLEFphoto2008/images/39/39696.jpg","meta":{"Title":"El Puente del Puerto de Sydney","Description":"","Notes":"","Location":"Sydney, Australia","Date":"Septiembre de 2002"},"sim":"0.879"}],"person":[{"src":"images/ImageCLEFphoto2008/images/05/5079.jpg","meta":{"Title":"Der Strand bei Paracas","Description":"","Notes":"","Location":"Paracas, Peru","Date":"September 2002"},"sim":"0.709"},{"src":"images/ImageCLEFphoto2008/images/06/6619.jpg","meta":{"Title":"In the hot springs","Description":"","Notes":"","Location":"Chivay, Peru","Date":"10 October 2002"},"sim":"0.708"},{"src":"images/ImageCLEFphoto2008/images/32/32890.jpg","meta":{"Title":"Circular Quay und das Opernhaus von Sydney","Description":"","Notes":"","Location":"Sydney, Australien","Date":"3. Januar 2005"},"sim":"0.706"},{"src":"images/ImageCLEFphoto2008/images/02/2452.jpg","meta":{"Title":"Las ruinas de Chan Chan","Description":"","Notes":"","Location":"Trujillo, Per\u00fa","Date":"Noviembre de 2002"},"sim":"0.704"},{"src":"images/ImageCLEFphoto2008/images/05/5183.jpg","meta":{"Title":"Die K\u00fcste der Isla de la Plata","Description":"","Notes":"","Location":"Isla de la Plata, Ekuador","Date":"September 2002"},"sim":"0.704"},{"src":"images/ImageCLEFphoto2008/images/39/39699.jpg","meta":{"Title":"Vista de una parte de la \u00d3pera de Sydney","Description":"","Notes":"","Location":"Sydney, Australia","Date":"Septiembre de 2002"},"sim":"0.703"}]};
       //var liens=[["beach","sand"],["sand","person"]];
       
-
       var initNodes=[];
       var initEdges=[];
 
-      var colorI=0;
-      for(categorie in images){
+      var categorieCouleur=[];
+
+      for(var colorI=0; colorI<categories.length; colorI++){
         var colorVal=getColor(colorI);
-        initNodes.push({"data": {"id": categorie, "categorie": true, "color": colorVal}});
-        
-        for(var i=0; i<images[categorie].length; i++){
-          var name=categorie+i;
-          initNodes.push({"data": {"id": images[categorie][i]["src"], "categorie": false, "src": images[categorie][i]["src"], "meta": images[categorie][i]["meta"], "sim": images[categorie][i]["sim"]}});
-          initEdges.push({"data": {"source": categorie, "target": images[categorie][i]["src"], "color": colorVal, "categorie": false}});
+        initNodes.push({"data": {"id": categories[colorI], "categorie": true, "color": colorVal}});
+        categorieCouleur[categories[colorI]]=colorVal;
+      }
+
+      for(var i=0; i<images.length; i++){
+        initNodes.push({"data": {"id": images[i].src, "categorie": false, "src": images[i].src, "meta": images[i].meta, "sim": images[i].sim, "categories": images[i].categories }});
+        for(var j=0; j<images[i].categories.length; j++){
+          initEdges.push({"data": {"source": images[i].categories[j], "target": images[i].src, "color": categorieCouleur[images[i].categories[j]], "categorie": false}});
         }
-        colorI++;
       }
 
       for(var i=0; i<liens.length; i++){
+        console.log("source: "+liens[i][0]+", target: "+liens[i][1]);
         initEdges.push({"data": {source: liens[i][0], "target": liens[i][1], "color": "#000000", "categorie": true }});
       }  
 
@@ -552,7 +574,11 @@
               for(var j in element.data("meta")){
                 infos+=j+": "+element.data("meta")[j]+"<br/>";
               } 
-              infos+="Similarité="+element.data("sim");
+              infos+="Similarity="+element.data("sim")+"<br/>";
+              infos+="Categories = ";
+              for(var categorie in element.data("categories")){
+                infos+=element.data("categories")[categorie]+" ";
+              }
 
               var link = $(\'<a id="lienTemp" style="display:none;" href="\'+element.data("src")+\'" rel="lightbox" data-title="\'+infos+\'" ><img src="\'+ element.data("src") +\'" class="imgBasique"></a>\');
          	    $("body").append(link);
@@ -583,7 +609,7 @@
 
     function reset(){
       if(cy!==undefined && cy!=null){
-        cy.reset();
+        cy.fit(cy);
       }
     }
 

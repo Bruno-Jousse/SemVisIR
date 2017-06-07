@@ -19,104 +19,141 @@
 			}
 			return $array;
 		}
+		
+		//vérifie si les métadonnées sont initialisées et retourne une nouvelle array avec les métadonnées utiles
+		public function testExif($exif){
+			$newExif=array();
 
+			if(!isset($exif["GPS"]["GPSLongitude"]) || !isset($exif["GPS"]['GPSLongitudeRef']) || !isset($exif["GPS"]["GPSLatitude"]) || !isset($exif["GPS"]['GPSLatitudeRef'])){
+				$newExif["location"]="";
+     		 }
+			else{
+				$longitude=$this->getGps($exif["GPS"]["GPSLongitude"], $exif["GPS"]["GPSLongitudeRef"]);
+				$latitude=$this->getGps($exif["GPS"]['GPSLatitude'], $exif["GPS"]['GPSLatitudeRef']);
 
-		/*
-		//Affichage basique
-		public function getImagesSim(){
-			//Contient la fonction file_get_html
-			include_once("tierApp/simple-html-dom/simple_html_dom.php");
-			
-			if(!($results=$this->similarity())){
-				throw new ModeleRechercheException("Le fichier n'a pas pu être ouvert");
+				$newExif["location"]=$this->coordToAdress($latitude, $longitude);
 			}
 
-			$directory="images/ImageCLEFphoto2008/images/";
-			$images=array();
-
-			for($i=0; $i<count($results); $i++){
-				//0=src, 1=similarity
-				//$infos=explode(" ", $results[$i]);
-				$infos=preg_split('/ /', $results[$i], -1, PREG_SPLIT_NO_EMPTY);
-				if(!($meta=$this->meta($infos[0]))){
-					throw new ModeleRechercheException("Le fichier n'a pas pu être ouvert");
-				}
-				array_push($images, array("src" => $directory.$infos[0].".jpg", "meta" => $meta, "sim" => $infos[1]));
+			$texte="";
+			if(isset($exif["EXIF"]["UserComment"])) {
+				$texte.=$exif["EXIF"]["UserComment"]."\n";
 			}
-			return $images;
+
+			if(isset($exif["IMAGE"]["ImageDescription"])){
+				$texte.=$exif["IMAGE"]["ImageDescription"];
+			}
+
+			$newExif["texte"]=$texte;
+
+			if(!isset($exif["FILE"]["FileSize"])){
+			  	$newExif["taille"]="";
+			}
+			else{
+				$tailleKo=$exif["FILE"]["FileSize"]/1024;
+				$tailleKo.=" Ko";
+				$newExif["taille"]=$tailleKo;
+			}
+
+			if(!isset($exif["EXIF"]["DateTimeOriginal"])){
+				$newExif["date"]="";
+			}
+			else{
+				$newExif["date"]=$this->transformDate($exif["EXIF"]["DateTimeOriginal"]);
+			}
+      		
+			return $newExif;
+		}
+		
+		public function getGps($exifCoord, $hemi) {
+
+			$degrees = count($exifCoord) > 0 ? $this->gps2Num($exifCoord[0]) : 0;
+			$minutes = count($exifCoord) > 1 ? $this->gps2Num($exifCoord[1]) : 0;
+			$seconds = count($exifCoord) > 2 ? $this->gps2Num($exifCoord[2]) : 0;
+
+			$flip = ($hemi == 'W' or $hemi == 'S') ? -1 : 1;
+
+			return $flip * ($degrees + $minutes / 60 + $seconds / 3600);
+
 		}
 
-		//Affichage avancée
-		public function getImagesCat(){
+		public function gps2Num($coordPart) {
+
+			$parts = explode('/', $coordPart);
+
+			if (count($parts) <= 0)
+				return 0;
+
+			if (count($parts) == 1)
+				return $parts[0];
+
+			return floatval($parts[0]) / floatval($parts[1]);
+		}
+
+		private function coordToAdress($lat, $long){
+			$url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$long&key=AIzaSyCmtgjI_qHSum-_LADHNYVbzjvQrJECm9s";
+    		$json = json_decode(file_get_contents($url), true);
+    		$a = $json['results'][0]['formatted_address'];
+			return $a;
+		}
+		
+		public function transformDate($date){
+			$exploded=explode(" ", $date);
+			$explodedDate=explode(":", $exploded[0]);
+
+			$jour=$explodedDate[2];
+			$mois=$explodedDate[1];
+			$annee=$explodedDate[0];
+		
+			$explodedHeure=explode(":", $exploded[1]);
+
+			$heure=$explodedHeure[0];
+			$minute=$explodedHeure[1];
+			$seconde=$explodedHeure[2];
+		
+			$dateFin="Le ".$jour."/".$mois."/".$annee." à ".$heure.":".$minute.":".$seconde;
+			return $dateFin;
+		}
+
+		//retourne:{ 0 => { 0 => {src:"", sim:"", categories:{ 0=> "", 1=> ""}, meta:{titre:"" date:""...} }, 1 => {}... }, 1 => { 0 => "catégorie1", 1 => "categorie2"... }, 2 => { 0 => { 0 => "sourceLien", 1 => "targetLien"}, 1 => {}... }}
+		//en [0]: Array d'images ayant une source, une valeur de similarité, des metadonnées et des catégories, en [1] les catégories et en [2] les liens entre les catégories.
+		public function getImagesCategoriesEtLiens(){
 			include_once("tierApp/simple-html-dom/simple_html_dom.php");
 			
-			if(!($categories=$this->relation()[0])){
+			//Récupère les images, catégories et liens.
+			if(!($imagesCategoriesEtLiens=$this->relation())){
 				throw new ModeleRechercheException("Le fichier n'a pas pu être ouvert");
 			}
+
+			//Récupère les images et leurs similarités.
 			if(!($results=$this->similarity())){
 				throw new ModeleRechercheException("Le fichier n'a pas pu être ouvert");
 			}
+
+			$images=$imagesCategoriesEtLiens[0];
+			$categories=$imagesCategoriesEtLiens[1];
+			$liens=$imagesCategoriesEtLiens[2];
 			$directory="images/ImageCLEFphoto2008/images/";
-			$images=array();
-
-			foreach($categories as $key => $categorie){
-				$images[$key]=array();
-				for($b=0; $b<count($categorie); $b++){
-					$trouve=false;
-					for($i=0; $i<count($results) && $trouve==false; $i++){
-						//0=src, 1=similarity
-						$infos=preg_split('/ /', $results[$i], -1, PREG_SPLIT_NO_EMPTY);
-						if($infos[0]==$categorie[$b]){
-							$trouve=true;
-							if(!($meta=$this->meta($infos[0]))){
-								throw new ModeleRechercheException("Le fichier n'a pas pu être ouvert");
-							}
-							$array=array("src" => $directory . $infos[0] . ".jpg", "meta" => $meta, "sim" => $infos[1]);
-							//var_dump($images[$key]);
-							array_push($images[$key], $array);
-						}
-					}
-				}
-			}
-			return $images;
-		}*/
-
-		//retourne: {categorie:{image:{src:"", sim:"", meta:{titre:"" date:""...} } } }
-		//Array des catégories possèdans des images ayant une source, une valeur de similarité et des metadonnées.
-		public function getImagesEtLiens(){
-			include_once("tierApp/simple-html-dom/simple_html_dom.php");
+			$imagesFin=array();
 			
-			if(!($imagesEtLiens=$this->relation())){
-				throw new ModeleRechercheException("Le fichier n'a pas pu être ouvert");
-			}			if(!($results=$this->similarity())){
-				throw new ModeleRechercheException("Le fichier n'a pas pu être ouvert");
-			}
-			$categories=$imagesEtLiens[0];
-			$liens=$imagesEtLiens[1];
-			$directory="images/ImageCLEFphoto2008/images/";
-			$images=array();
-
-			foreach($categories as $key => $categorie){
-				$images[$key]=array();
-				for($b=0; $b<count($categorie); $b++){
-					$trouve=false;
-					for($i=0; $i<count($results) && $trouve==false; $i++){
-						//0=src, 1=similarity
-						$infos=preg_split('/ /', $results[$i], -1, PREG_SPLIT_NO_EMPTY);
-						if($infos[0]==$categorie[$b]){
-							$trouve=true;
-							if(!($meta=$this->meta($infos[0]))){
-								throw new ModeleRechercheException("Le fichier n'a pas pu être ouvert");
-							}
-							$array=array("src" => $directory . $infos[0] . ".jpg", "meta" => $meta, "sim" => $infos[1]);
-							//var_dump($images[$key]);
-							array_push($images[$key], $array);
+			//On regroupe les informations des images
+			foreach($images as $key => $sesCategories){
+				$trouve=false;
+				for($j=0; $j<count($results) && $trouve==false; $j++){
+					//0=src, 1=similarity
+					$infos=preg_split('/ /', $results[$j], -1, PREG_SPLIT_NO_EMPTY);
+					if($infos[0]==$key){
+						$trouve=true;
+						if(!($meta=$this->meta($infos[0]))){
+							throw new ModeleRechercheException("Le fichier n'a pas pu être ouvert");
 						}
+						$array=array("src" => $directory . $infos[0] . ".jpg", "meta" => $meta, "sim" => $infos[1], "categories" => $sesCategories);
+						array_push($imagesFin, $array);
 					}
 				}
 			}
-			$imagesEtLiens[0]=$images;
-			return $imagesEtLiens;
+
+			$imagesCategoriesEtLiens[0]=$imagesFin;
+			return $imagesCategoriesEtLiens;
 		}
 
 		//Récupère les informations des images
@@ -142,42 +179,51 @@
 			return $array;
 		}
 
-
-		//Récupère les catégories et les images
-		//Retourne une array avec en 0 les categories et en 1 les liens
+		//En [0] on a le nom des images qui sert de clé et qui contient ses catégories, en [1] on a les catégories et en [2] les liens entre catégories
 		public function relation(){
 			if(!($file=fopen("category/listesultsRelations.txt","r"))){
 				return false;
 			}
 			$results=array();
+			$categories=array();
 			$images=array();
-			$i=0;
 			$category="";
-			$buffer=false;
+
 			while(($buffer = fgets($file) )!== false && !preg_match("/inter-category relations:/", $buffer)){
+
+				//Nouvelle catégorie
 				if(preg_match("/category :[^\n]*/", $buffer)){
 					$buffer=substr($buffer,0,strlen($buffer)-1);
 					$category=preg_replace("/category :/", "",$buffer);
-					$images[$category]=array();
-					$i++;
+					array_push($categories, $category);
 				}
+
+				//Image dans la catégorie
 				else{
 					if(substr($buffer, -1)=="\n"){
 						$buffer=substr($buffer,0,strlen($buffer)-1);
 					}
-					array_push($images[$category], $buffer);
+					if(!isset($images[$buffer])){
+						$images[$buffer]=array();
+					}
+					array_push($images[$buffer], $category);
 				}
 			}
+
 			$liens=array();
 			if(preg_match("/inter-category relations:/", $buffer)){
+
+				//Lien entre deux catégories (0 => source, 1 => target)
 				while(($buffer = fgets($file) )!== false){
-					$categories=split("has_seantic_relation", $buffer);
-					$categories[0]=substr($categories[0],0,strlen($categories[0])-1);
-					$categories[1]=substr($categories[1],1,strlen($categories[1])-2);
-					array_push($liens, $categories);
+					$lien=split("has_seantic_relation", $buffer);
+					$lien[0]=substr($lien[0],0,strlen($lien[0])-1);
+					$lien[1]=substr($lien[1],1,strlen($lien[1])-2);
+					array_push($liens, $lien);
 				}
 			}
+
 			array_push($results, $images);
+			array_push($results, $categories);
 			array_push($results, $liens);
 			fclose($file);
 			return $results;
@@ -185,7 +231,7 @@
 
 
 		//Récupère juste les images (pas utilisé)
-		/*public function result(){
+		public function result(){
 			if(!($file=fopen("category/listResults.txt","r"))){
 				return false;
 			}
@@ -196,7 +242,7 @@
 			}
 			fclose($file);
 			return $results;
-		}*/
+		}
 
 		//Récupère les images et valeurs de similaritées
 		public function similarity(){
@@ -216,6 +262,7 @@
 			return $results;
 		}
 
+		//Trie l'array
 		public function array_sort($array, $on, $order=SORT_ASC)
 		{
 			$new_array = array();
