@@ -58,28 +58,25 @@
 
 		//Appelle l'algo permettant de créer les fichiers textes.
 		private function choixAlgo($algo){
+	
 			switch($algo){
 				case "Basique":
-					//algo
 					break;
           		case "VP":
-				  	//algo
 					break;
           		case "SVP":
-				  	//algo
 					break;
           		case "SCVP":
-					//algo
 					break;
           		case "Patron":
-				  	//algo
 					break;          
 				case "Cible":
-					//algo
 					break;
 				default:
 					return false;
 			}
+
+			$results=$this->modele->algoRequest($algo);
 
 			return true;
 		}
@@ -89,13 +86,10 @@
 
 			switch($vue){
 				case "Basique":
-					//$this->affichageBasique($img, $exif, $imagesSim, $imagesCate, $liens);
 					break;
 				case "Avancee":
-					//$this->affichageAvance($img, $exif, $imagesSim, $imagesCate, $liens);	
 					break;
 				case "Graphique":
-					//$this->affichageGraphique($img, $exif, $imagesSim, $imagesCate, $liens);	
 					break;
 				default:
 					return false;

@@ -3,7 +3,7 @@
 	class ModeleRecherche extends ModeleGenerique{	
 	    
 		public function exif($img){
- 	 	    //$imageData = file_get_contents($img["tmp_name"]);
+			//L'image étant uploader de manière temporaire, on récupère son chemin avec ["tmp_name"]
 			$exif = exif_read_data($img["tmp_name"], 0, true);
 			$array=array();
 
@@ -36,6 +36,7 @@
 
 			$texte="";
 			if(isset($exif["EXIF"]["UserComment"])) {
+				//var_dump($exif["EXIF"]["UserComment"]);
 				$texte.=$exif["EXIF"]["UserComment"]."\n";
 			}
 
@@ -63,8 +64,8 @@
       		
 			return $newExif;
 		}
-		
-		public function getGps($exifCoord, $hemi) {
+
+		private function getGps($exifCoord, $hemi) {
 
 			$degrees = count($exifCoord) > 0 ? $this->gps2Num($exifCoord[0]) : 0;
 			$minutes = count($exifCoord) > 1 ? $this->gps2Num($exifCoord[1]) : 0;
@@ -76,7 +77,7 @@
 
 		}
 
-		public function gps2Num($coordPart) {
+		private function gps2Num($coordPart) {
 
 			$parts = explode('/', $coordPart);
 
@@ -89,6 +90,24 @@
 			return floatval($parts[0]) / floatval($parts[1]);
 		}
 
+		//Requête HTTP post au serveur possédant l'algo
+		public function algoRequest($algo){
+			/*
+			require_once('tierApp/Requests-master/library/Requests.php');
+
+			Requests::register_autoloader();
+
+			$options = array('auth' => array('user', 'password'), 'algo' => $algo);
+			
+			//(url, header, options)
+			$request = Requests::post('http://siteAlgo.fr', array(), $options);
+
+			var_dump($request);
+		
+			return $request;
+			*/
+		}
+
 		private function coordToAdress($lat, $long){
 			$url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$long&key=AIzaSyCmtgjI_qHSum-_LADHNYVbzjvQrJECm9s";
     		$json = json_decode(file_get_contents($url), true);
@@ -96,7 +115,7 @@
 			return $a;
 		}
 		
-		public function transformDate($date){
+		private function transformDate($date){
 			$exploded=explode(" ", $date);
 			$explodedDate=explode(":", $exploded[0]);
 
@@ -114,8 +133,12 @@
 			return $dateFin;
 		}
 
-		//retourne:{ 0 => { 0 => {src:"", sim:"", categories:{ 0=> "", 1=> ""}, meta:{titre:"" date:""...} }, 1 => {}... }, 1 => { 0 => "catégorie1", 1 => "categorie2"... }, 2 => { 0 => { 0 => "sourceLien", 1 => "targetLien"}, 1 => {}... }}
-		//en [0]: Array d'images ayant une source, une valeur de similarité, des metadonnées et des catégories, en [1] les catégories et en [2] les liens entre les catégories.
+		//retourne:{ 0 => { 0 => {src:"", sim:"", categories:{ 0=> "", 1=> ""}, meta:{titre:"" date:""...} }, 1 => {}... },
+		// 1 => { 0 => "catégorie1", 1 => "categorie2"... }, 
+		//2 => { 0 => { 0 => "sourceLien", 1 => "targetLien"}, 1 => {}... }}
+		//en [0]: Array possédant les images ayant une source, une valeur de similarité, une array de metadonnées et une array de catégories, 
+		//en [1] array possédant les catégories 
+		//et en [2] array possédant les liens entre les catégories.
 		public function getImagesCategoriesEtLiens(){
 			include_once("tierApp/simple-html-dom/simple_html_dom.php");
 			
@@ -170,7 +193,8 @@
 				return false;
 			}
 
-			$array=array("Title" => $html->find("TITLE", 0)->innertext, "Description" => $html->find("DESCRIPTION",0)->innertext, "Notes" => $html->find("NOTES",0)->innertext, "Location" => $html->find("LOCATION",0)->innertext, "Date" => $html->find("DATE",0)->innertext);
+			$array=array("Title" => $html->find("TITLE", 0)->innertext, "Description" => $html->find("DESCRIPTION",0)->innertext, 
+			"Notes" => $html->find("NOTES",0)->innertext, "Location" => $html->find("LOCATION",0)->innertext, "Date" => $html->find("DATE",0)->innertext);
 			
 			foreach($array as $key =>$value){
 				$array[$key]=iconv('UTF-8', 'UTF-8//IGNORE', utf8_encode($value));
@@ -179,7 +203,9 @@
 			return $array;
 		}
 
-		//En [0] on a le nom des images qui sert de clé et qui contient ses catégories, en [1] on a les catégories et en [2] les liens entre catégories
+		//En [0] on a le nom des images qui sert de clé et qui contient ses catégories, 
+		//en [1] on a les catégories 
+		//et en [2] les liens entre catégories
 		public function relation(){
 			if(!($file=fopen("category/listesultsRelations.txt","r"))){
 				return false;
@@ -211,6 +237,8 @@
 			}
 
 			$liens=array();
+
+			//relations entre catégories (liens)
 			if(preg_match("/inter-category relations:/", $buffer)){
 
 				//Lien entre deux catégories (0 => source, 1 => target)
@@ -262,7 +290,7 @@
 			return $results;
 		}
 
-		//Trie l'array
+		//Trie l'array selon les valeurs dans la clé $on
 		public function array_sort($array, $on, $order=SORT_ASC)
 		{
 			$new_array = array();

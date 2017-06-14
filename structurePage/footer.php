@@ -5,7 +5,7 @@
     <a href="index.php?module=accueil"><img id="logoF" src="images/logo.bmp"></a>
   </div>
   <div id="footerText" class="col-sm-6">
-    <p>Application réalisé par ... pour une thèse en Informatique</p>
+    <p>Application réalisé par Olfa Allani pour une thèse en Informatique</p>
     <p><span class="glyphicon glyphicon-copyright-mark"></span> Copyright 2017 SemVisIR. Tous droits r&eacute;serv&eacute;s.</p>
   </div>
   </div>
