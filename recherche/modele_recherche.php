@@ -2,6 +2,7 @@
 		
 	class ModeleRecherche extends ModeleGenerique{	
 	    
+		//Retourne la liste des métadonnées de l'image
 		public function exif($img){
 			//L'image étant uploader de manière temporaire, on récupère son chemin avec ["tmp_name"]
 			$exif = exif_read_data($img["tmp_name"], 0, true);
@@ -65,6 +66,7 @@
 			return $newExif;
 		}
 
+		//Transforme les coordonnées GPS en float
 		private function getGps($exifCoord, $hemi) {
 
 			$degrees = count($exifCoord) > 0 ? $this->gps2Num($exifCoord[0]) : 0;
@@ -91,6 +93,7 @@
 		}
 
 		//Requête HTTP post au serveur possédant l'algo
+		//Le serveur doit retourner une liste de 3 listes : une liste de liste de: chemin de l\'image et sa valeur de similarité; une liste de liste de: chemin del\'image et ses catégories; une liste de liste de: catégorie1 et categorie2 (représentant un lien entre deux catégories) 
 		public function algoRequest($algo){
 			/*
 			require_once('tierApp/Requests-master/library/Requests.php');
@@ -108,6 +111,7 @@
 			*/
 		}
 
+		//Transforme des coordonnées float en une adresse (nom de rue, de la ville, département...)
 		private function coordToAdress($lat, $long){
 			$url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$long&key=AIzaSyCmtgjI_qHSum-_LADHNYVbzjvQrJECm9s";
     		$json = json_decode(file_get_contents($url), true);
@@ -115,6 +119,7 @@
 			return $a;
 		}
 		
+		//Transforme le format de la date
 		private function transformDate($date){
 			$exploded=explode(" ", $date);
 			$explodedDate=explode(":", $exploded[0]);
@@ -166,6 +171,8 @@
 					$infos=preg_split('/ /', $results[$j], -1, PREG_SPLIT_NO_EMPTY);
 					if($infos[0]==$key){
 						$trouve=true;
+						
+						//On ajoute ses métadonnées (annotations)
 						if(!($meta=$this->meta($infos[0]))){
 							throw new ModeleRechercheException("Le fichier n'a pas pu être ouvert");
 						}
@@ -179,7 +186,7 @@
 			return $imagesCategoriesEtLiens;
 		}
 
-		//Récupère les informations des images
+		//Récupère les informations des images contenues dans les annotation s
 		public function meta($img){
 
 			$directory="images/ImageCLEFphoto2008/annotations/";
@@ -202,7 +209,8 @@
 
 			return $array;
 		}
-
+			
+		// Retourne :
 		//En [0] on a le nom des images qui sert de clé et qui contient ses catégories, 
 		//en [1] on a les catégories 
 		//et en [2] les liens entre catégories
@@ -258,7 +266,7 @@
 		}
 
 
-		//Récupère juste les images (pas utilisé)
+		//Récupère juste les images (pas utilisé ni testé)
 		public function result(){
 			if(!($file=fopen("category/listResults.txt","r"))){
 				return false;
