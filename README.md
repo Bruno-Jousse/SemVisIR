@@ -1,6 +1,7 @@
 # SemVisIR
 
 Application de recherche d'image.
+https://github.com/Bruno-Jousse/SemVisIR
 
 ## Introduction
 
