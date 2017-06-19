@@ -88,7 +88,9 @@
       $vueBasique=json_encode($vueBasique);
       $vueAvancee=json_encode($vueAvancee);
       $vueGraphique=json_encode($vueGraphique);
-
+	    
+	  
+      //Javascript commun à tous les affichages, il permet de changer d'affichage	  
       $this->contenu.='<div id="affichage">
       </div>
       		<script type="text/javascript">
@@ -130,7 +132,7 @@
     }
 
     //Affichage basique
-		public function htmlBasique(){
+    public function htmlBasique(){
       return '
         <hr>
         <div id="divboucle">
@@ -244,10 +246,10 @@
     };
       
   </script>';
-		}
+    }
 
     //Affichage avancée
-		public function htmlAvancee(){
+    public function htmlAvancee(){
 
       return '
         <hr>
@@ -373,12 +375,11 @@
     }
 
     //Affichage catégorie
-
     var indexCategories=0;
     var categoriesHTML;
     var categorieChecked;
     
-    //Affiche les bonnes catégories sur les boutons
+    //Affiche les bonnes catégories sur les boutons  
     function affichageCategories(){
         for(var i=0; i<categoriesHTML.length; i++){
           categoriesHTML[i].getElementsByTagName("label")[0].innerHTML=categories[i+indexCategories];
@@ -410,7 +411,7 @@
       affichageCategories();
     }
 
-    //Change la catégorie à afficher
+    //Change la catégorie à afficher    
     function selectionCategorie(div){
       if(typeof div !== "undefined"){
         categorieChecked=div.getElementsByTagName("label")[0].innerHTML;
@@ -420,7 +421,7 @@
       }
     }
 
-    //Récupère les images de ma catégorie
+    //Récupère les images de la catégorie
     function getImages(categorie){
       var imgs=[];
       for(var i=0; i<images.length; i++){
@@ -448,9 +449,9 @@
     
   </script>';
 
-		}
+    }
 
-//Affichage graphique
+    //Affichage graphique
     public function htmlGraphique() {
       
       return '
@@ -481,6 +482,7 @@
       var categorieCouleur=[];
 
       //Crée les nodes des catégories
+      
       for(var colorI=0; colorI<categories.length; colorI++){
         var colorVal=getColor(colorI);
         initNodes.push({"data": {"id": categories[colorI], "categorie": true, "color": colorVal}});
@@ -488,6 +490,7 @@
       }
 
       //Crée les nodes et edges des images
+      
       for(var i=0; i<images.length; i++){
         initNodes.push({"data": {"id": images[i].src, "categorie": false, "src": images[i].src, "meta": images[i].meta, "sim": images[i].sim, "categories": images[i].categories }});
         for(var j=0; j<images[i].categories.length; j++){
@@ -496,6 +499,7 @@
       }
 
       //Crée les edges entre catégories
+      
       for(var i=0; i<liens.length; i++){
         console.log("source: "+liens[i][0]+", target: "+liens[i][1]);
         initEdges.push({"data": {source: liens[i][0], "target": liens[i][1], "color": "#000000", "categorie": true }});
@@ -503,7 +507,7 @@
 
       var cy;
 
-      //Permet d\'obtenir plein de couleurs différentes (à tester si ça marche avec plus de catégories)
+      //Permet d\'obtenir plein de couleurs différentes (à tester si ça marche avec plus de catégories)      
       function getColor(index){
         var nb=index%6;
         var i=Math.floor(index/6)
@@ -547,6 +551,7 @@
       }
 
     //Création du graphe
+    
     "use strict";
     document.addEventListener(\'DOMContentLoaded\', function() {
       cy=cytoscape({
@@ -582,6 +587,7 @@
       });
 
       //Récupère chaque élement du graphe et lui applique des modifs
+      
       cy.filter(function(element, i){
         if(element.isNode() && element.data("categorie") == false && element.data("src") != ""){
             element.style("background-image", element.data("src"));
@@ -637,6 +643,7 @@
       }
     }
 
+    //Change la méthode de disposition des nodes
     function changeLayout(newLayout){
       if(cy!==undefined && cy!=null){
         $("#boutons").children("button").removeClass("active");
@@ -667,5 +674,5 @@
 
   </script>'; 
     }
-	}
+  }
 ?>
