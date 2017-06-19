@@ -18,6 +18,13 @@ Les fonctions du Modèle exécutent des algorithmes et des calculs et retournent
 
 Les fonctions de la Vue permette de définir ce qui sera affiché par l'index, à l'intérieur de la variable $contenu.
 
+## Installation
+
+Pour lancer l'application, il faut un serveur web (comme Apache) pour pouvoir lancer le PHP en local.
+Si vous n'avez pas de serveur Apache, vous pouvez installer Xampp ou Lampp par exemple.
+Ensuite il faut que l'ensemble des dossiers et documents se trouvent sous dans le dossier /opt/lampp/htdocs/SemVisIR par exemple. 
+Après avoir démarré le serveur, vous devez entrer en URL dans un naviguateur web :"localhost/SemVisIR/index.php" (si vous avez suivi l'exemple précédent).
+Si tout a bien été fait, la page web devrait s'afficher.
 
 ## Les modules
 
