@@ -8,6 +8,7 @@
 			$this->vue=new VueRecherche();
 			$this->modele=new ModeleRecherche();
 
+			//On vérfie que tous les champs ont été rempli
 			if(isset($_POST["algo"]) && isset($_POST["affichage"]) && isset($_FILES["file"])){
 
 				$img=$_FILES["file"];
@@ -44,6 +45,7 @@
 			}
 		}
 
+		//On vérifie qu'il s'agit bien d'une image, et que sa taille ne dépasse pas une certaine limite
 		public function testImg($img){
 			$maxsize=4194304;
 			$extensions_valides = array( 'jpg' , 'jpeg' , 'gif' , 'png' );
@@ -96,7 +98,7 @@
 			}
 
 			try{
-				//Récupération images.
+				//Récupération images (avec leur similarité, annotations, catégories)
 				$imagesCategoriesEtLiens=$this->modele->getImagesCategoriesEtLiens();
 				$images=$imagesCategoriesEtLiens[0];
 				$categories=$imagesCategoriesEtLiens[1];
