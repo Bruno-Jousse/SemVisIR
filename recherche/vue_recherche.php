@@ -102,7 +102,8 @@
           var affichageGraphique='.$vueGraphique.'; 
 
           var vue='.$this->vue.';
-
+	  
+          //Fonction appelée lorsque l\'on appuie sur les boutons, elle permet de changer l\'affichage en affectant dans l\' HTML de la div de droite la variable contenant l\'HTML et le Js d\'un affichage
           function changerAffichage(vue){
             $("#navAffichage").children().removeClass("active");
             switch(vue){
